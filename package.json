@@ -1,7 +1,7 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "consolidate-to-pdf",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "Consolidates and exports the entire vault into one PDF.",
 	"main": "main.js",
 	"type": "module",
 	"scripts": {

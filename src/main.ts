@@ -6,7 +6,17 @@ interface ExportOptions {
 	pageBreakAfterEachNote: boolean;
 }
 
+// The Obsidian type def does not expose executeCommandById and findCommand,
+// but the functions are available. We extend App here so we don't get type errors when calling these.
+interface AppWithCommands extends App {
+	commands?: {
+		findCommand: (id: string) => unknown;
+		executeCommandById: (id: string) => Promise<void> | void;
+	};
+}
+
 export default class ConsolidateToPdfPlugin extends Plugin {
+	// We use HTML/CSS for page breaks becuase this works with Obsidian's PDF export, whereas markdown page break syntax does not always work as expected.
 	private readonly pageBreakMarker = '<div class="vault-to-pdf-page-break"></div>';
 
 	private getExportNotePath(): string {
@@ -14,6 +24,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 	}
 
 	async onload() {
+		// Add the CSS for page breaks in PDF export
 		const styleEl = document.createElement('style');
 		styleEl.textContent = '@media print { .vault-to-pdf-page-break { break-after: page; page-break-after: always; } }';
 		document.head.appendChild(styleEl);
@@ -65,14 +76,22 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 			const leaf = this.app.workspace.getLeaf(true);
 			await leaf.openFile(exportFile, {active: true});
 
-			const exportCommandExists = this.app.commands.findCommand('workspace:export-pdf');
+			// Keep typescript happy :)
+			const appWithCommands = this.app as AppWithCommands;
+			if (!appWithCommands || !appWithCommands.commands) {
+				progressNotice.hide();
+				new Notice('PDF export command is not available in this environment.');
+				return;
+			}
+
+			const exportCommandExists = appWithCommands.commands.findCommand('workspace:export-pdf');
 			if (!exportCommandExists) {
 				progressNotice.hide();
 				new Notice('PDF export command is not available in this environment.');
 				return;
 			}
 
-			await this.app.commands.executeCommandById('workspace:export-pdf');
+			await appWithCommands.commands.executeCommandById('workspace:export-pdf');
 			progressNotice.hide();
 			new Notice('PDF export started. Temporary export note kept to avoid premature deletion.', 6000);
 		} catch (error) {
