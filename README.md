@@ -5,6 +5,8 @@ Consolidate to PDF is an Obsidian community plugin that combines markdown notes 
 ## Features
 
 - Consolidate all vault markdown notes into one document
+- Adds a button to the ribbon to start the export process
+- Provides the command `Consolidate vault to PDF`
 - Export options modal before each run:
   - Include cover page
   - Include table of contents
@@ -12,7 +14,6 @@ Consolidate to PDF is an Obsidian community plugin that combines markdown notes 
 - Table of contents entries link to exported sections
 - Preserves folder hierarchy
 - Skips `.obsidian` content and the temporary export note
-- Provides the command `Consolidate vault to PDF`
 
 ## Temporary export file
 
@@ -23,14 +24,12 @@ Any previous export note is deleted before a new export starts.
 ## Development
 
 - Install dependencies: `npm install`
-- Run in watch mode: `npm run dev`
-- Build for production: `npm run build`
+- Build and enable watch mode: `npm run dev`
 - Lint: `npm run lint`
 
 ## Manual install
-
-Copy `main.js` and `manifest.json` (and `styles.css` if present) to:
-`<Vault>/.obsidian/plugins/consolidate-to-pdf/`
+- Download the latest release from the [releases page](https://github.com/OHM-Engineering/Obsidian-Consolidate-To-PDF/releases). 
+- Extract to: `<Vault>/.obsidian/plugins/consolidate-to-pdf`
 
 Then enable the plugin in `Settings -> Community plugins`.
 
