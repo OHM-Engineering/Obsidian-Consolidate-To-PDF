@@ -23,13 +23,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 		return normalizePath('__vault_pdf_export_source.md');
 	}
 
-	async onload() {
-		// Add the CSS for page breaks in PDF export
-		const styleEl = document.createElement('style');
-		styleEl.textContent = '@media print { .vault-to-pdf-page-break { break-after: page; page-break-after: always; } }';
-		document.head.appendChild(styleEl);
-		this.register(() => styleEl.remove());
-
+	onload() {
 		this.addRibbonIcon('file-output', 'Consolidate vault to PDF', () => {
 			void this.exportVaultToPdf();
 		});
@@ -127,7 +121,9 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 
 		return this.app.vault
 			.getMarkdownFiles()
-			.filter((file) => file.path !== exportNotePath && !file.path.startsWith('.obsidian/'))
+			// Config files and plugin data should not be included in the export.
+			// We also want to exclude any existing export note to avoid duplication.
+			.filter((file) => file.path !== exportNotePath && !file.path.startsWith(`${this.app.vault.configDir}/`))
 			.sort((a, b) => {
 				const folderCompare = this.comparePathSegments(a.parent?.path ?? '', b.parent?.path ?? '', collator);
 				if (folderCompare !== 0) {
@@ -196,7 +192,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 		if (options.includeCoverPage) {
 			lines.push(`# ${vaultName}`);
 			lines.push('');
-			lines.push('Complete Vault Export');
+			lines.push('Complete vault export');
 			lines.push('');
 			lines.push(`Generated: ${now}`);
 			lines.push('');
@@ -209,7 +205,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 
 		let previousFolders: string[] = [];
 		if (options.includeTableOfContents) {
-			lines.push('# Table of Contents');
+			lines.push('# Table of contents');
 			lines.push('');
 			lines.push('<div class="vault-to-pdf-toc">');
 			lines.push('');
@@ -325,14 +321,15 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 	private async deleteExistingExportFileIfAny(): Promise<void> {
 		const existingFile = this.app.vault.getAbstractFileByPath(this.getExportNotePath());
 		if (existingFile instanceof TFile) {
-			await this.app.vault.delete(existingFile, true);
+			// Respecting user deletion preferences (system trash vs permanent delete)
+			await this.app.fileManager.trashFile(existingFile);
 		}
 	}
 
 	private async deleteExportFile(file: TFile): Promise<void> {
 		const fileInVault = this.app.vault.getAbstractFileByPath(file.path);
 		if (fileInVault instanceof TFile) {
-			await this.app.vault.delete(fileInVault, true);
+			await this.app.fileManager.trashFile(fileInVault);
 		}
 	}
 	
@@ -388,7 +385,7 @@ class ExportSettingsModal extends Modal {
 			)
 			.addButton((button) =>
 				button
-					.setButtonText('Export')
+					.setButtonText('Start')
 					.setCta()
 					.onClick(() => {
 						this.resolveAndClose(this.options);
