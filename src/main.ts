@@ -41,7 +41,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 		const markdownFiles = this.getSortedVaultFiles();
 
 		if (markdownFiles.length === 0) {
-			new Notice('No markdown files found in vault.');
+			new Notice('No Markdown files found in vault.');
 			return;
 		}
 
