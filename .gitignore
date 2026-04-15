@@ -3,7 +3,6 @@ node_modules/
 
 # Build output
 main.js
-styles.css
 *.map
 *.tsbuildinfo
 
