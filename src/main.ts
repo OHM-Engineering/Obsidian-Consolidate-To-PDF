@@ -18,6 +18,8 @@ interface AppWithCommands extends App {
 export default class ConsolidateToPdfPlugin extends Plugin {
 	// We use HTML/CSS for page breaks becuase this works with Obsidian's PDF export, whereas markdown page break syntax does not always work as expected.
 	private readonly pageBreakMarker = '<div class="vault-to-pdf-page-break"></div>';
+	private readonly minCharsBeforeLogicalBreak = 3200;
+	private readonly imageContentWeight = 1200;
 
 	private getExportNotePath(): string {
 		return normalizePath('__vault_pdf_export_source.md');
@@ -178,6 +180,41 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 			.replace(/'/g, '&#39;');
 	}
 
+	private insertLogicalPageBreaks(noteContent: string): string {
+		const lines = noteContent.split('\n');
+		const output: string[] = [];
+		let charsSinceBreak = 0;
+
+		for (const line of lines) {
+			const trimmed = line.trim();
+			const isHeader = /^#{1,6}\s+\S/.test(trimmed);
+
+			if (trimmed === this.pageBreakMarker) {
+				output.push(line);
+				charsSinceBreak = 0;
+				continue;
+			}
+
+			if (isHeader && charsSinceBreak >= this.minCharsBeforeLogicalBreak) {
+				const previousNonEmptyLine = [...output].reverse().find((existingLine) => existingLine.trim().length > 0);
+				if (previousNonEmptyLine !== this.pageBreakMarker) {
+					output.push('');
+					output.push(this.pageBreakMarker);
+					output.push('');
+					charsSinceBreak = 0;
+				}
+			}
+
+			output.push(line);
+			const isMarkdownImage = /!\[[^\]]*\]\([^)]+\)/.test(line);
+			const isHtmlImage = /<img\s+[^>]*src=/.test(line);
+			const imageWeight = isMarkdownImage || isHtmlImage ? this.imageContentWeight : 0;
+			charsSinceBreak += line.length + 1 + imageWeight;
+		}
+
+		return output.join('\n');
+	}
+
 	private async buildExportMarkdown(
 		files: TFile[],
 		options: ExportOptions,
@@ -282,7 +319,11 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 			lines.push('');
 
 			const noteContent = await this.app.vault.cachedRead(file);
-			lines.push(noteContent.trimEnd());
+			const normalizedNoteContent = noteContent.trimEnd();
+			const contentWithLogicalBreaks = options.pageBreakAfterEachNote
+				? this.insertLogicalPageBreaks(normalizedNoteContent)
+				: normalizedNoteContent;
+			lines.push(contentWithLogicalBreaks);
 			lines.push('');
 
 			if (options.pageBreakAfterEachNote && fileIndex < files.length - 1) {
