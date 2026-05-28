@@ -180,6 +180,15 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 			.replace(/'/g, '&#39;');
 	}
 
+	private getFolderSegments(file: TFile): string[] {
+		const parentPath = file.parent?.path ?? '';
+		if (!parentPath) {
+			return [];
+		}
+
+		return parentPath.split('/').filter((segment) => segment.length > 0);
+	}
+
 	private insertLogicalPageBreaks(noteContent: string): string {
 		const lines = noteContent.split('\n');
 		const output: string[] = [];
@@ -248,7 +257,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 			lines.push('');
 
 			for (const [fileIndex, file] of files.entries()) {
-				const folderSegments = file.parent?.path ? file.parent.path.split('/') : [];
+                const folderSegments = this.getFolderSegments(file);
 
 				let commonPrefixLength = 0;
 				while (
@@ -289,7 +298,7 @@ export default class ConsolidateToPdfPlugin extends Plugin {
 
 		previousFolders = [];
 		for (const [fileIndex, file] of files.entries()) {
-			const folderSegments = file.parent?.path ? file.parent.path.split('/') : [];
+            const folderSegments = this.getFolderSegments(file);
 
 			let commonPrefixLength = 0;
 			while (
